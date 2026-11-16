@@ -218,3 +218,18 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- Knowledge graph pipeline ---
+# Generated data (raw exports, harmonized CSVs, RDF)
+data/
+reports/
+logs/
+tmp/
+
+# RMLMapper JAR (download separately)
+tools/rmlmapper-*.jar
+
+# Synapse cache and credentials
+.synapseCache/
+synapse_config.yaml
+*.token
