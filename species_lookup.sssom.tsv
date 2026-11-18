@@ -1,0 +1,14 @@
+#curie_map:
+#  elite: https://eliteportal.synapse.org/terms#
+#  NCBITaxon: http://purl.obolibrary.org/obo/NCBITaxon_
+#  skos: http://www.w3.org/2004/02/skos/core#
+#  semapv: https://w3id.org/semapv/vocab/
+#mapping_set_id: https://eliteportal.synapse.org/mapping/species_lookup
+#mapping_set_version: 0.1
+#license: https://creativecommons.org/licenses/by/4.0/
+#comment: Seed lookup for ELITE species valid values (EL.data.model.csv). Cross-species values map to the taxon covering the group, as closeMatch. Confirm File speciesName values before use.
+subject_id	subject_label	predicate_id	object_id	object_label	mapping_justification	comment
+	Human	skos:exactMatch	NCBITaxon:9606	Homo sapiens	semapv:ManualMappingCuration	
+	Mouse	skos:exactMatch	NCBITaxon:10090	Mus musculus	semapv:ManualMappingCuration	Assumes laboratory mouse; confirm no other Mus species in ELITE data.
+	Cross-Species Mammalian	skos:closeMatch	NCBITaxon:40674	Mammalia	semapv:ManualMappingCuration	Study spans several mammal species; individual species not recorded at study level.
+	Cross-Species Avian	skos:closeMatch	NCBITaxon:8782	Aves	semapv:ManualMappingCuration	Study spans several bird species; individual species not recorded at study level.
