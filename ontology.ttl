@@ -1,0 +1,253 @@
+# ELITE Portal — Knowledge Graph Ontology
+# Namespace: https://eliteportal.synapse.org/terms#  (prefix: elite:)
+# Pattern:   follows nf-osi/kg-pipeline and amp-als/kg-pipeline —
+#            portal-table-backed classes are elite: classes, subClassOf the BioLink
+#            parent where one exists; instances carry both types.
+# Version:   0.1 (Layer 1, Phase 1 tables: All Entities, Projects, Programs,
+#            Publications, Datasets). Grant, Person and Tool are deferred.
+# Rules:     see docs/identifier-and-mapping-rules.md
+# Naming:    property local names mirror ELITE data model attribute names where one
+#            exists, so this file can later be generated from the LinkML model
+#            (ADM-8587) without renaming graph terms.
+
+@prefix elite:   <https://eliteportal.synapse.org/terms#> .
+@prefix biolink: <https://w3id.org/biolink/vocab/> .
+@prefix owl:     <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos:    <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
+
+################################################################################
+# Ontology declaration
+################################################################################
+
+<https://eliteportal.synapse.org/ontology>
+    a owl:Ontology ;
+    rdfs:label "ELITE Portal Knowledge Graph Ontology" ;
+    rdfs:comment "Classes and properties for public ELITE Portal metadata (Layer 1) in the SageBrain knowledge graph." ;
+    owl:versionInfo "0.1" .
+
+################################################################################
+# Classes
+################################################################################
+
+elite:Study a owl:Class ;
+    rdfs:subClassOf biolink:Study ;
+    rdfs:label "Study" ;
+    rdfs:comment "A released research study on the ELITE Portal. Sourced from Backend - All Entities (syn51489960) rows where type = folder, metadataType = study and isReleased = true. Keyed https://www.synapse.org/Synapse:{id}. The hub of the portal graph: files and datasets link to it via elite:parentStudy. Instances are also typed biolink:Study." .
+
+elite:File a owl:Class ;
+    rdfs:label "File" ;
+    rdfs:comment "A data file on the ELITE Portal. Sourced from Backend - All Entities (syn51489960) rows where type = file, in released studies; folders, tables, views, datasets and RecordSets in that view are not files. Keyed https://www.synapse.org/Synapse:{id}. No BioLink parent: BioLink has no well-used data file class (same decision as ALS PortalFile)." .
+
+elite:Dataset a owl:Class ;
+    rdfs:subClassOf biolink:Dataset ;
+    rdfs:label "Dataset" ;
+    rdfs:comment "A curated dataset on the ELITE Portal. Sourced from Portal - Datasets (syn75102003). Keyed https://www.synapse.org/Synapse:{id}. Instances are also typed biolink:Dataset." .
+
+elite:Project a owl:Class ;
+    rdfs:label "Project" ;
+    rdfs:comment "A funded research project contributing to the ELITE Portal (for example LLFS or NECS). Sourced from Portal - Projects (syn51209786). Keyed elite:project/{shortName}." .
+
+elite:Program a owl:Class ;
+    rdfs:label "Program" ;
+    rdfs:comment "A program grouping projects and studies on the ELITE Portal (for example ELITE or AD). Sourced from Portal - Programs (syn73580515). Keyed elite:program/{program}. Equivalent in role to NF's initiatives." .
+
+elite:Publication a owl:Class ;
+    rdfs:subClassOf biolink:Publication ;
+    rdfs:label "Publication" ;
+    rdfs:comment "A publication associated with ELITE Portal studies or projects. Sourced from Portal - Publications (syn51407023). Keyed https://www.synapse.org/Synapse:{id}, matching the Synapse IDs in publicationIds. Instances are also typed biolink:Publication." .
+
+################################################################################
+# Object properties — relationships between portal entities
+################################################################################
+
+elite:parentStudy a owl:ObjectProperty ;
+    rdfs:label "parent study" ;
+    rdfs:comment "The study a file or dataset belongs to. Name matches nf:parentStudy for cross-portal consistency. File source: All Entities.studyKey, resolved to the study's Synapse ID at extract time. Dataset source: Portal - Datasets.studyId, falling back to studyKey." ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( elite:File elite:Dataset ) ] ;
+    rdfs:range elite:Study .
+
+elite:project a owl:ObjectProperty ;
+    rdfs:label "project" ;
+    rdfs:comment "The project a study or dataset belongs to. Study source: All Entities.project (joined to Portal - Projects.shortName); Dataset source: Portal - Datasets.project. In the data model this concept also appears as projectShortName." ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( elite:Study elite:Dataset ) ] ;
+    rdfs:range elite:Project .
+
+elite:program a owl:ObjectProperty ;
+    rdfs:label "program" ;
+    rdfs:comment "The program a study or project is part of. Sources: All Entities.program, Portal - Projects.program." ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( elite:Study elite:Project ) ] ;
+    rdfs:range elite:Program .
+
+elite:relatedStudies a owl:ObjectProperty ;
+    rdfs:label "related studies" ;
+    rdfs:comment "Another study related to this one. Source: All Entities.relatedStudies (multi-value Synapse IDs). Symmetric in meaning, but only asserted in the direction the source records it." ;
+    rdfs:domain elite:Study ;
+    rdfs:range elite:Study .
+
+elite:publicationIds a owl:ObjectProperty ;
+    rdfs:label "publication" ;
+    rdfs:comment "A publication describing this study or dataset. Sources: All Entities.publicationIds, Portal - Datasets.publicationIds (multi-value). Local name mirrors the data model attribute." ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( elite:Study elite:Dataset ) ] ;
+    rdfs:range elite:Publication .
+
+################################################################################
+# Object properties — harmonized controlled values (labels resolved via SSSOM)
+################################################################################
+
+elite:species a owl:ObjectProperty ;
+    rdfs:label "species" ;
+    rdfs:comment "Species studied, as an NCBITaxon class IRI. Sources: All Entities.species, Portal - Datasets.species; File speciesName. Label-to-IRI lookup: mappings/sssom/species_lookup.sssom.tsv." ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( elite:Study elite:Dataset elite:File ) ] .
+
+elite:dataType a owl:ObjectProperty ;
+    rdfs:label "data type" ;
+    rdfs:comment "Type of data generated, as an ontology class IRI (EDAM preferred). Sources: All Entities.dataTypeAll (studies), dataType (datasets, files). Label-to-IRI lookup comes from the LinkML epic's term mapping work (ADM-8594, ADM-8595); unmapped values fall back to elite: terms." ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( elite:Study elite:Dataset elite:File ) ] .
+
+elite:specimenType a owl:ObjectProperty ;
+    rdfs:label "specimen type" ;
+    rdfs:comment "Type of specimen collected, as an ontology class IRI (UBERON for tissues, NCIT or CL otherwise). Sources: All Entities.specimenType, Portal - Datasets.specimenType. Label-to-IRI lookup from ADM-8594 and ADM-8595." ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( elite:Study elite:Dataset ) ] .
+
+################################################################################
+# Datatype properties — Study
+################################################################################
+
+elite:studyKey a owl:DatatypeProperty ;
+    rdfs:label "study key" ;
+    rdfs:comment "Portal-assigned unique key for a study. Kept as a literal for lookup; the study's IRI is its Synapse ID." ;
+    rdfs:domain elite:Study ;
+    rdfs:range xsd:string .
+
+elite:studyName a owl:DatatypeProperty ;
+    rdfs:label "study name" ;
+    rdfs:comment "Display name of the study. Also emitted as rdfs:label." ;
+    rdfs:domain elite:Study ;
+    rdfs:range xsd:string .
+
+elite:studyAbstract a owl:DatatypeProperty ;
+    rdfs:label "study abstract" ;
+    rdfs:comment "Abstract describing the study. Source: All Entities.studyAbstract (studyDescription on study rows holds a Synapse ID, so it is not used)." ;
+    rdfs:domain elite:Study ;
+    rdfs:range xsd:string .
+
+elite:studyType a owl:DatatypeProperty ;
+    rdfs:label "study type" ;
+    rdfs:domain elite:Study ;
+    rdfs:range xsd:string .
+
+elite:isModelSystem a owl:DatatypeProperty ;
+    rdfs:label "is model system" ;
+    rdfs:comment "Whether the study uses a model system rather than human participants." ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( elite:Study elite:File ) ] ;
+    rdfs:range xsd:boolean .
+
+elite:dataStatus a owl:DatatypeProperty ;
+    rdfs:label "data status" ;
+    rdfs:comment "Whether a study's data is available on the portal. Live values: Available, Data Pending. Kept as a literal (portal status flag, not a domain concept)." ;
+    rdfs:domain elite:Study ;
+    rdfs:range xsd:string .
+
+elite:dataRestriction a owl:DatatypeProperty ;
+    rdfs:label "data restriction" ;
+    rdfs:comment "Access level for the data. Values: Open, Registered, Controlled, Not Applicable (multi-value on studies, single on datasets). Kept as a literal for v0.1; candidate for DUO alignment later." ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( elite:Study elite:Dataset ) ] ;
+    rdfs:range xsd:string .
+
+elite:dataGenerationInstitution a owl:DatatypeProperty ;
+    rdfs:label "data generation institution" ;
+    rdfs:comment "Institution that generated the study's data. Source: All Entities.dataGenerationInstitution (multi-value), the only institution column on study rows. Literal in v0.1; candidate for ROR harmonization." ;
+    rdfs:domain elite:Study ;
+    rdfs:range xsd:string .
+
+################################################################################
+# Datatype properties — Dataset
+################################################################################
+
+elite:datasetName a owl:DatatypeProperty ;
+    rdfs:label "dataset name" ;
+    rdfs:comment "Display name of the dataset. Also emitted as rdfs:label. Source: Portal - Datasets.name." ;
+    rdfs:domain elite:Dataset ;
+    rdfs:range xsd:string .
+
+elite:datePublished a owl:DatatypeProperty ;
+    rdfs:label "date published" ;
+    rdfs:domain elite:Dataset ;
+    rdfs:range xsd:date .
+
+elite:license a owl:DatatypeProperty ;
+    rdfs:label "license" ;
+    rdfs:domain elite:Dataset ;
+    rdfs:range xsd:string .
+
+################################################################################
+# Datatype properties — File
+################################################################################
+
+elite:fileName a owl:DatatypeProperty ;
+    rdfs:label "file name" ;
+    rdfs:comment "Name of the file. Also emitted as rdfs:label. Source: All Entities.name." ;
+    rdfs:domain elite:File ;
+    rdfs:range xsd:string .
+
+elite:fileFormat a owl:DatatypeProperty ;
+    rdfs:label "file format" ;
+    rdfs:comment "Format of the file. Literal in v0.1; candidate for EDAM format harmonization." ;
+    rdfs:domain elite:File ;
+    rdfs:range xsd:string .
+
+elite:assay a owl:DatatypeProperty ;
+    rdfs:label "assay" ;
+    rdfs:comment "Assay that produced the data. Literal in v0.1 (not used by Phase 1 competency questions); candidate for harmonization." ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( elite:File elite:Dataset ) ] ;
+    rdfs:range xsd:string .
+
+################################################################################
+# Datatype properties — Project, Program
+################################################################################
+
+elite:projectShortName a owl:DatatypeProperty ;
+    rdfs:label "project short name" ;
+    rdfs:comment "Short name of a project; also the key used to mint its IRI." ;
+    rdfs:domain elite:Project ;
+    rdfs:range xsd:string .
+
+elite:projectFullName a owl:DatatypeProperty ;
+    rdfs:label "project full name" ;
+    rdfs:comment "Full name of a project. Also emitted as rdfs:label." ;
+    rdfs:domain elite:Project ;
+    rdfs:range xsd:string .
+
+elite:programName a owl:DatatypeProperty ;
+    rdfs:label "program name" ;
+    rdfs:domain elite:Program ;
+    rdfs:range xsd:string .
+
+################################################################################
+# Datatype and link properties — Publication
+################################################################################
+
+elite:pmid a owl:ObjectProperty ;
+    rdfs:label "PubMed record" ;
+    rdfs:comment "Link to the PubMed record, as https://pubmed.ncbi.nlm.nih.gov/{pmid}. Matches nf:pmid." ;
+    rdfs:domain elite:Publication .
+
+elite:doi a owl:DatatypeProperty ;
+    rdfs:label "DOI" ;
+    rdfs:domain elite:Publication ;
+    rdfs:range xsd:string .
+
+elite:publicationTitle a owl:DatatypeProperty ;
+    rdfs:label "publication title" ;
+    rdfs:comment "Title of the publication. Also emitted as rdfs:label. Source: Portal - Publications.Title." ;
+    rdfs:domain elite:Publication ;
+    rdfs:range xsd:string .
+
+elite:publicationYear a owl:DatatypeProperty ;
+    rdfs:label "publication year" ;
+    rdfs:comment "Source: Portal - Publications.Year (string, parsed)." ;
+    rdfs:domain elite:Publication ;
+    rdfs:range xsd:gYear .
